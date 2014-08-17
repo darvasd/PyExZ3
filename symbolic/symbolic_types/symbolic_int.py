@@ -79,11 +79,13 @@ class SymbolicInteger(SymbolicType,int):
 		return self._do_bin_op(other, lambda x, y: x >> y, ast.RShift, SymbolicInteger.wrap)
 	def __rrshift__(self,other):
 		return self.__rshift__(other)
+	
+	def __pow__(self, other):
+		return self._do_bin_op(other, lambda x, y: x**y, ast.Pow, SymbolicInteger.wrap)
 
 	# no symbolic implementation for
 	#
 	# __floordiv__
 	# __divmod__
-	# __pow__
 	# __bit_length__
 

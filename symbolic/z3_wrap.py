@@ -117,6 +117,7 @@ class Z3Wrapper(object):
 	def _boundIntegers(self,vars,val):
 		bval = BitVecVal(val,self.N,self.solver.ctx)
 		bval_neg = BitVecVal(-val+1,self.N,self.solver.ctx)
+		#x = bval_neg.as_signed_long()
 		return And([ v <= bval for v in vars]+[ bval_neg < v for v in vars])
 
 	def _getIntegerVariable(self,name):
@@ -146,7 +147,7 @@ class Z3Wrapper(object):
 	def _astToZ3Expr(self,expr,env=None):
 		if isinstance(expr,list):
 			op = expr[0]
-			print(type(op).__name__)
+			#print(type(op).__name__)
 			args = [ self._astToZ3Expr(a,env) for a in expr[1:] ]
 			z3_l,z3_r = args[0],args[1]
 
@@ -161,6 +162,16 @@ class Z3Wrapper(object):
 				return z3_l / z3_r
 			elif isinstance(op, ast.Mod):
 				return z3_l % z3_r
+			elif isinstance(op, ast.Pow) and isinstance(z3_r, BitVecNumRef):
+				# Only if the exponent is a concrete value
+				exponent = z3_r.as_signed_long()
+				ret = BitVecVal(1, self.N)
+				while exponent > 0:
+					ret = z3_l * ret
+					exponent = exponent - 1
+				return ret
+			elif isinstance(op,ast.Pow) and isinstance(z3_r, int):
+				return z3_l ** z3_r 
 			
 			# arrays
 			elif isinstance(op, ast.Index):

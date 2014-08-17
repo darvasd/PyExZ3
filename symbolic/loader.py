@@ -4,11 +4,16 @@ import inspect
 import re
 import os
 import sys
+import ast # DD
 from .invocation import FunctionInvocation
 from .symbolic_types import SymbolicInteger
+from .symbolic_types import SymbolicDict
 
 def newInteger(name,val):
 	return SymbolicInteger(name,val)
+	
+def newDictionary(name,val):
+	return SymbolicDict(name,val)
 
 class Loader:
 	def __init__(self, filename):
@@ -18,11 +23,15 @@ class Loader:
 
 	def create_invocation(self):
 		inv = FunctionInvocation(self.execute)
-		# associate a SymbolicInteger with each formal parameter of function
+		# associate a SymbolicInteger with each formal parameter of function, except if its name starts with 'dict_'
 		func = self.app.__dict__[self.test_name]
 		argspec = inspect.getargspec(func)
 		for a in argspec.args:
-			inv.addSymbolicParameter(a, newInteger, 0)
+			if a[0:5] == "dict_":
+				print('Dictionary found: ' + a)
+				inv.addSymbolicParameter(a, newDictionary, dict())
+			else:
+				inv.addSymbolicParameter(a, newInteger, 0)
 		return inv
 
 	def reset_callback(self,firstpass=False):

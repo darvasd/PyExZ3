@@ -6,6 +6,7 @@ import logging
 import utils
 from z3 import *
 from .symbolic_types.symbolic_int import SymbolicInteger
+from .symbolic_types.symbolic_dict import SymbolicDict
 from .symbolic_types.symbolic_type import SymbolicType
 
 class Z3Wrapper(object):
@@ -124,6 +125,13 @@ class Z3Wrapper(object):
 		else:
 			self.log.error("Trying to create a duplicate variable")
 		return self.z3_vars[name]
+	
+	def _getDictionaryVariable(self,name):
+		if name not in self.z3_vars:
+			self.z3_vars[name] = Array(name, BitVecSort(self.N, self.solver.ctx), BitVecSort(self.N, self.solver.ctx))
+		else:
+			self.log.error("Trying to create a duplicate variable")
+		return self.z3_vars[name]
 
 	def _int2BitVec(self,v):
 		return BitVecVal(v, self.N, self.solver.ctx)
@@ -138,6 +146,7 @@ class Z3Wrapper(object):
 	def _astToZ3Expr(self,expr,env=None):
 		if isinstance(expr,list):
 			op = expr[0]
+			print(type(op).__name__)
 			args = [ self._astToZ3Expr(a,env) for a in expr[1:] ]
 			z3_l,z3_r = args[0],args[1]
 
@@ -152,6 +161,10 @@ class Z3Wrapper(object):
 				return z3_l / z3_r
 			elif isinstance(op, ast.Mod):
 				return z3_l % z3_r
+			
+			# arrays
+			elif isinstance(op, ast.Index):
+				return Select(z3_l,z3_r)
 
 			# bitwise
 			elif isinstance(op, ast.LShift):
@@ -190,8 +203,18 @@ class Z3Wrapper(object):
 					return env[expr.name]
 			else:
 				return self._astToZ3Expr(expr.expr,env)
+			
+		elif isinstance(expr, SymbolicDict):
+			if expr.isVariable():
+				if env == None:
+					return self._getDictionaryVariable(expr.name)
+				else:
+					return env[expr.name]
+			else:
+				return self._astToZ3Expr(expr.expr,env)
 
 		elif isinstance(expr, SymbolicType):
+			self.log.warn('SymbolicType that is not SymbolicInteger/SymbolicDict @ z3_wrap')
 			return self._astToZ3Expr(expr.expr,env)
 
 		elif isinstance(expr, int):

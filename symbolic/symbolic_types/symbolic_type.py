@@ -158,5 +158,7 @@ def op2str(o):
 		return "in"
 	if isinstance(o,ast.NotIn):
 		return "not in"
+	if isinstance(o,ast.Index):
+		return "sub"
 	raise KeyError()
 

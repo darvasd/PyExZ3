@@ -30,12 +30,19 @@ class Z3Wrapper(object):
 	def _getModel(self):
 		res = {}
 		model = self.solver.model()
-		#print("Model is ")
-		#print(model)
+		print("Model is ")
+		print(model)
 		for name in self.z3_vars.keys():
 			try:
 				ce = model.eval(self.z3_vars[name])
-				res[name] = ce.as_signed_long()
+				if name[0:5] == "dict_":
+					#TODO: handle symbolic dictionaries in the model given by Z3
+					print(z3.is_array(ce)) # this is True normally
+					# ce is an ArrayRef
+					res[name] = ce.as_array() # This does not work. :(
+				else:
+					# must probably a SymbolicInteger
+					res[name] = ce.as_signed_long()
 			except:
 				pass
 		return res
@@ -117,7 +124,6 @@ class Z3Wrapper(object):
 	def _boundIntegers(self,vars,val):
 		bval = BitVecVal(val,self.N,self.solver.ctx)
 		bval_neg = BitVecVal(-val+1,self.N,self.solver.ctx)
-		#x = bval_neg.as_signed_long()
 		return And([ v <= bval for v in vars]+[ bval_neg < v for v in vars])
 
 	def _getIntegerVariable(self,name):

@@ -48,9 +48,8 @@ class Z3Wrapper(object):
 			try:
 				ce = model.eval(self.z3_vars[name])
 				if name[0:5] == "dict_":
-					#TODO: handle symbolic dictionaries in the model given by Z3
-					print(z3.is_array(ce)) # this is True normally
-					# ce is an ArrayRef
+					# print(z3.is_array(ce)) # this should be True normally
+					# ce is an ArrayRef, but model[self.z3_vars[name]] is a FuncInterp that is more convenient
 					res[name] = self._arrayref_to_dict(model[self.z3_vars[name]])
 				else:
 					# must probably a SymbolicInteger
@@ -195,6 +194,10 @@ class Z3Wrapper(object):
 			
 			# arrays
 			elif isinstance(op, ast.Index):
+				# z3_l and z3_r should be Z3 type to be used with Selevt, 
+				# but env contains concrete Python values and z3_l and z3_r will be chosen from env after the first Z3 run
+				if isinstance(z3_l,dict) and isinstance(z3_r,int):
+					return z3_l[z3_r]
 				return Select(z3_l,z3_r)
 
 			# bitwise

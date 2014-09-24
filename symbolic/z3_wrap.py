@@ -11,6 +11,8 @@ from .symbolic_types.symbolic_type import SymbolicType
 
 class Z3Wrapper(object):
 	def __init__(self):
+
+		
 		self.log = logging.getLogger("se.z3")
 		self.solver = Solver()
 		self.z3_vars = {}
@@ -26,6 +28,16 @@ class Z3Wrapper(object):
 		return self._findModel()
 
 	# private
+	
+	def _arrayref_to_dict(self, ar):
+		d = {}
+		for i in range(0, ar.num_entries()):
+			entry = ar.entry(i)
+			key = entry.arg_value(0).as_signed_long()
+			val = entry.value().as_signed_long()
+			d[key] = val
+		# TODO: else value
+		return d
 
 	def _getModel(self):
 		res = {}
@@ -39,13 +51,15 @@ class Z3Wrapper(object):
 					#TODO: handle symbolic dictionaries in the model given by Z3
 					print(z3.is_array(ce)) # this is True normally
 					# ce is an ArrayRef
-					res[name] = ce.as_array() # This does not work. :(
+					res[name] = self._arrayref_to_dict(model[self.z3_vars[name]])
 				else:
 					# must probably a SymbolicInteger
 					res[name] = ce.as_signed_long()
 			except:
+				print("Exception happened in z3_wrap." + sys.exc_info()[0])
 				pass
 		return res
+
 	
 	# turn the validity query (assertions => query) into satisfiability in Z3
 	def _generateZ3(self):
